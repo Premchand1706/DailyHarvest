@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | DailyHarvest</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Checkout specific styles */
+        .checkout-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        
+        .customer-details, .order-summary {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .form-group input, 
+        .form-group select, 
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-group textarea {
+            height: 100px;
+        }
+        
+        .order-items {
+            margin-bottom: 1.5rem;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .total-section {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 2px solid #ddd;
+        }
+        
+        .place-order-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 1rem;
+            width: 100%;
+            font-size: 1.1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+            font-weight: bold;
+        }
+        
+        .payment-method {
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>DailyHarvest</h1>
+            <p style="color: #000; font-size: 1.0em;">Fresh. Organic. On Time.</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="green-groceries.html">Green Groceries</a></li>
+                <li><a href="dairy-products.html">Dairy Products</a></li>
+                <li><a href="grains-pulses.html">Grains & Pulses</a></li>
+                <li><a href="cart.html">Cart (<span id="cart-count">0</span>)</a></li>
+                <li><a href="orders.html">Orders</a></li>
+                <li><a href="login.html">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="checkout-container">
+            <div class="customer-details">
+                <h2>Customer Information</h2>
+                <form id="checkoutForm">
+                    <div class="form-group">
+                        <label for="name">Full Name*</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email*</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number*</label>
+                        <input type="tel" id="phone" required>
+                    </div>
+                    
+                    <h3>Shipping Address</h3>
+                    
+                    <div class="form-group">
+                        <label for="address">Address*</label>
+                        <textarea id="address" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="city">City*</label>
+                        <input type="text" id="city" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="state">State*</label>
+                        <input type="text" id="state" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pincode">PIN Code*</label>
+                        <input type="text" id="pincode" required>
+                    </div>
+                    
+                    <div class="payment-method">
+                        <h3>Payment Method</h3>
+                        <div class="form-group">
+                            <select id="paymentMethod" required onchange="showPaymentFields()">
+                                <option value="">Select Payment Method*</option>
+                                <option value="cod">Cash on Delivery</option>
+                                <option value="card">Credit/Debit Card</option>
+                                <option value="upi">UPI Payment</option>
+                            </select>
+                        </div>
+                        <div id="paymentFields"></div>
+                    </div>
+                    
+                    <button type="submit" class="place-order-btn">Place Order</button>
+                </form>
+            </div>
+            
+            <div class="order-summary">
+                <h2>Order Summary</h2>
+                <div class="order-items" id="orderItems">
+                    <!-- Cart items will be loaded here by JavaScript -->
+                </div>
+                <div class="total-section" id="orderTotal">
+                    <!-- Total will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 DailyHarvest. All rights reserved.</p>
+    </footer>
+    
+    <script>
+        // Load cart items when checkout page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+            displayCheckoutItems();
+            
+            // Handle form submission
+            const checkoutForm = document.getElementById('checkoutForm');
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    placeOrder();
+                });
+            }
+        });
+        
+        function displayCheckoutItems() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const orderItemsContainer = document.getElementById('orderItems');
+            const orderTotalContainer = document.getElementById('orderTotal');
+            
+            let grandTotal = 0;
+            let itemsHTML = '';
+            
+            if (cart.length === 0) {
+                orderItemsContainer.innerHTML = '<p>Your cart is empty</p>';
+                orderTotalContainer.innerHTML = '<p>Total: ₹0</p>';
+                return;
+            }
+            
+            cart.forEach(item => {
+                const price = parseFloat(item.price.replace('₹', '').replace(',', ''));
+                const total = price * item.quantity;
+                grandTotal += total;
+                
+                itemsHTML += `
+                    <div class="order-item">
+                        <span>${item.name} × ${item.quantity}</span>
+                        <span>₹${total.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+            
+            // Calculate tax (2%)
+            const tax = grandTotal * 0.02;
+            const totalWithTax = grandTotal + tax;
+            
+            orderItemsContainer.innerHTML = itemsHTML;
+            orderTotalContainer.innerHTML = `
+                <div class="order-item">
+                    <span>Subtotal</span>
+                    <span>₹${grandTotal.toFixed(2)}</span>
+                </div>
+                <div class="order-item">
+                    <span>Shipping</span>
+                    <span>FREE</span>
+                </div>
+                <div class="order-item">
+                    <span>Tax (2%)</span>
+                    <span>₹${tax.toFixed(2)}</span>
+                </div>
+                <div class="order-item" style="font-weight: bold; font-size: 1.1rem;">
+                    <span>Total</span>
+                    <span>₹${totalWithTax.toFixed(2)}</span>
+                </div>
+            `;
+        }
+        
+        function showPaymentFields() {
+            const method = document.getElementById('paymentMethod').value;
+            const paymentFields = document.getElementById('paymentFields');
+            if (method === 'card') {
+                paymentFields.innerHTML = `
+                    <div class='form-group'>
+                        <label for='cardNumber'>Card Number*</label>
+                        <input type='text' id='cardNumber' maxlength='19' required placeholder='1234 5678 9012 3456'>
+                    </div>
+                    <div class='form-group'>
+                        <label for='cardName'>Name on Card*</label>
+                        <input type='text' id='cardName' required placeholder='Cardholder Name'>
+                    </div>
+                    <div class='form-group'>
+                        <label for='cardExpiry'>Expiry Date*</label>
+                        <input type='text' id='cardExpiry' maxlength='5' required placeholder='MM/YY'>
+                    </div>
+                    <div class='form-group'>
+                        <label for='cardCVV'>CVV*</label>
+                        <input type='password' id='cardCVV' maxlength='4' required placeholder='CVV'>
+                    </div>
+                `;
+            } else if (method === 'upi') {
+                paymentFields.innerHTML = `
+                    <div class='form-group'>
+                        <label for='upiId'>UPI ID*</label>
+                        <input type='text' id='upiId' required placeholder='example@upi'>
+                    </div>
+                `;
+            } else {
+                paymentFields.innerHTML = '';
+            }
+        }
+        
+        function placeOrder() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            if (paymentMethod === 'card') {
+                if (!document.getElementById('cardNumber').value ||
+                    !document.getElementById('cardName').value ||
+                    !document.getElementById('cardExpiry').value ||
+                    !document.getElementById('cardCVV').value) {
+                    alert('Please fill in all card details.');
+                    return;
+                }
+            } else if (paymentMethod === 'upi') {
+                if (!document.getElementById('upiId').value) {
+                    alert('Please enter your UPI ID.');
+                    return;
+                }
+            }
+            
+            // Create order object
+            const orderData = {
+                id: Date.now(),
+                customer: {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    address: {
+                        street: document.getElementById('address').value,
+                        city: document.getElementById('city').value,
+                        state: document.getElementById('state').value,
+                        pincode: document.getElementById('pincode').value
+                    }
+                },
+                items: cart,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                date: new Date().toISOString(),
+                status: 'Processing'
+            };
+            
+            // Save order to localStorage
+            const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+            orders.push(orderData);
+            localStorage.setItem('orders', JSON.stringify(orders));
+            
+            // Clear the cart
+            localStorage.setItem('cart', JSON.stringify([]));
+            updateCartCount();
+            
+            // Redirect to orders page
+            window.location.href = 'orders.html';
+        }
+        
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('cart')) || [];
+            const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            const cartCountElements = document.querySelectorAll('#cart-count');
+            
+            cartCountElements.forEach(element => {
+                element.textContent = cartCount;
+            });
+        }
+    </script>
+</body>
+</html>
